@@ -31,7 +31,7 @@ export const LinkURI = `${URIRoot}/template/view/`;
  * @see ProxyLink - The base component used for rendering the link.
  */
 export const Link = ({ item, children, ...props}) => {
-    return <ProxyLink to={LinkURI + item.id} {...props}>{children || item?.fullname || item?.name || item?.id || "Nevim"}</ProxyLink>
+    return <ProxyLink to={LinkURI + item?.id} {...props}>{children || item?.fullname || item?.name || item?.id || "Nevim"}</ProxyLink>
     // return <BaseUI.Link item={item} />
     // return <a>{children || item?.fullname || item?.name || item?.id || "Nevim"}</a>
 }

@@ -44,7 +44,7 @@ export const useGQLEntityContext = () => useContext(GQLEntityContext)
  *
  * @returns {import('react').JSX.Element}
  */
-export const AsyncAcionProvider = ({ 
+export const AsyncActionProvider = ({ 
     item, 
     queryAsyncAction, 
     options={ deferred: false, network: true }, 
@@ -54,7 +54,7 @@ export const AsyncAcionProvider = ({
 
     children, 
 }) => {
-    // const [contextid] = useState(crypto.randomUUID() || null)
+    const [contextid] = useState(crypto.randomUUID() || null)
     const { run , error, loading, entity, data } = useAsyncThunkAction(queryAsyncAction, item, options)
     const [delayer] = useState(() => CreateDelayer())
     const [varsState, setVarsState] = useState(item || {});
@@ -70,22 +70,24 @@ export const AsyncAcionProvider = ({
     
     // console.log("GQLEntityProvider", item, "entity", entity, "data", data)
     const contextValue = { 
-            loading, 
-            error, 
-            reRead: run, 
-            params: varsState, 
-            item: entity, 
-            data, 
-            onChange: onEvent(onChange), 
-            onBlur: onEvent(onBlur) 
-        }
+        loading, 
+        error, 
+        reRead: run, 
+        params: varsState, 
+        item: entity, 
+        data, 
+        onChange: onEvent(onChange), 
+        onBlur: onEvent(onBlur) 
+    }
+    console.log("GQLEntityProvider item", contextid, entity)
+    // if (!item) return null;
     return (
         <GQLEntityContext.Provider value={contextValue}>
             {/* <h1>{contextid}</h1> */}
             {loading && <LoadingSpinner />}
             {error && <ErrorHandler errors={error} />}
             {/* {(!loading && !error) && children} */}
-            {children}
+            {contextValue.item && children}
         </GQLEntityContext.Provider>
     );
 };

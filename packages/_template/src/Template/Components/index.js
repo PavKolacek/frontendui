@@ -11,3 +11,4 @@ export * from './MediumEditableContent'
 export * from './LiveEdit'
 
 
+export * from './ConfirmEdit'

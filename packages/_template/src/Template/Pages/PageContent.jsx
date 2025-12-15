@@ -22,7 +22,7 @@ import { PageNavbar } from "./PageNavbar"
  */
 export const PageContent = ({ children, ...props}) => {
     const { item } = useGQLEntityContext()
-    // if (!item) return null
+    if (!item) return null
     return (<>
         <PageNavbar item={item} />
         <LargeCard item={item} {...props} >

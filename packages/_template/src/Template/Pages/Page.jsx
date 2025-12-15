@@ -1,11 +1,11 @@
 import { useParams } from "react-router"
-import { AsyncAcionProvider } from "../Utils/GQLEntityProvider"
+import { AsyncActionProvider } from "../Utils/GQLEntityProvider"
 import { PageContent } from "./PageContent"
 import { ReadAsyncAction } from "../Queries"
 import { PlaceChild } from "../Utils/PlaceChild"
 import { MediumCardVectors } from "../Vectors/VectorAttribute"
 import { MediumCardScalars } from "../Scalars/ScalarAttribute"
-import { LiveEdit } from "../Components"
+import { ConfirmEdit, LiveEdit } from "../Components"
 
 /**
  * A page component for displaying lazy-loaded content of a template entity.
@@ -48,11 +48,12 @@ export const PageWrap = ({ children }) => {
     const item = {id}
     return (
         // <div>Hello</div>
-        <AsyncAcionProvider item={item} queryAsyncAction={ReadAsyncAction}>
+        <AsyncActionProvider item={item} queryAsyncAction={ReadAsyncAction}>
             <PageContent>
                 {children}
             </PageContent>
-        </AsyncAcionProvider>
+            {/* {children} */}
+        </AsyncActionProvider>
     )
 }
 
@@ -73,6 +74,8 @@ export const PageEdit = () => {
         // <div>Hello</div>
         <PageWrap>
             <PlaceChild Component={LiveEdit} />
+            <hr />
+            <PlaceChild Component={ConfirmEdit} />
         </PageWrap>
     )
 }
