@@ -1,14 +1,18 @@
-import { PlaceChild } from "../../../Base/Helpers/PlaceChild"
+
+import { useGQLEntityContext } from "../../../Base/Helpers/GQLEntityProvider"
 import { MediumCardScalars } from "../../../Base/Scalars/ScalarAttribute"
 import { MediumCardVectors } from "../../../Base/Vectors/VectorAttribute"
-import { Page } from "../Page"
+import { LargeCard } from "../../Components"
 
-export const PageKatedra = () => {
+
+export const PageKatedra = ({...props}) => {
+    const { item } = useGQLEntityContext()
+    if (!item) return null
     return (
-        <Page>
-            Katedra
-            <PlaceChild Component={MediumCardScalars}  />
-            <PlaceChild Component={MediumCardVectors}  />
-        </Page>
-    )
+        <LargeCard item={item} {...props} >
+            PageKatedra
+            <MediumCardScalars item={item} />
+            <MediumCardVectors item={item} />
+        </LargeCard>        
+    )    
 }

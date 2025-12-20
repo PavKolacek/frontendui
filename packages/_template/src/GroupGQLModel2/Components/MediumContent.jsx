@@ -40,8 +40,12 @@ export const MediumContent = ({ item, children}) => {
     return (
         <>
             <Attribute label="Název" item={item} attribute_name={"name"} attribute_value_result={item?.name} />
-            <Attribute label="Název" item={item} attribute_name={"name"} attribute_value_result={item?.name} />
-            <Attribute label="Název" item={item} attribute_name={"name"} attribute_value_result={item?.name} />
+            {item?.mastergroup && <Attribute label="Nadřízený" 
+                item={item} 
+                attribute_name={"name"}>
+                    <Link item={item?.mastergroup} />
+            </Attribute>}
+            {/* <Attribute label="Název" item={item} attribute_name={"name"} attribute_value_result={item?.name} /> */}
         </>
     )
 }

@@ -37,39 +37,44 @@ fragment Medium on GroupGQLModel {
 const LargeFragmentStr = `
 fragment Large on GroupGQLModel {
   ...Medium
-    subgroups {
-        __typename
-        id
-        name
-        grouptype {
-        __typename
-        id
-        name
-        }
-    }
-    memberships {
+  subgroups {
+    __typename
+    id
+    name
+    grouptype {
       __typename
       id
-      user {
-        __typename
-        id
-        fullname
-      }
-        group {
+      name
+    }
+  }
+  memberships {
+    __typename
+    id
+    user {
+      __typename
+      id
+      fullname
+    }
+    group {
+      __typename
+      id
+      name
+      grouptype {
         __typename
         id
         name
-        grouptype {
-          __typename
-          id
-          name
-}
       }
-        valid
-      startdate
-      enddate
-}
-  
+    }
+    valid
+    startdate
+    enddate
+  }
+  roles {
+    ...Role
+  }
+  rolesOn {
+    ...Role
+  }    
 }
 `
 
@@ -92,7 +97,7 @@ fragment Role on RoleGQLModel {
     roletypeId
     userId
     groupId
-    roletype { __typename id }
+    roletype { __typename id name }
     user { __typename id fullname }
     group { __typename id name }
   }
@@ -131,5 +136,5 @@ export const RBACFragment = createQueryStrLazy(`${RBACFragmentStr}`)
 
 export const LinkFragment = createQueryStrLazy(`${LinkFragmentStr}`)
 export const MediumFragment = createQueryStrLazy(`${MediumFragmentStr}`, LinkFragment, RBACFragment)
-export const LargeFragment = createQueryStrLazy(`${LargeFragmentStr}`, MediumFragment)
+export const LargeFragment = createQueryStrLazy(`${LargeFragmentStr}`, MediumFragment, RoleFragment)
   

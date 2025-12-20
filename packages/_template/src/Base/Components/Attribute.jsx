@@ -1,7 +1,7 @@
 import { Col } from "./Col";
 import { Row } from "./Row";
 
-export const Attribute = ({ item, label, attribute_name, attribute_value }) => {
+export const Attribute = ({ item, label, attribute_name, attribute_value, children }) => {
     const raw = attribute_value != null ? attribute_value : item?.[attribute_name];
 
     const formatDateTime = (d) => {
@@ -30,7 +30,7 @@ export const Attribute = ({ item, label, attribute_name, attribute_value }) => {
         return String(v);
     };
 
-    const value = renderValue(raw);
+    const value = children || renderValue(raw);
 
     return (
         <Row>

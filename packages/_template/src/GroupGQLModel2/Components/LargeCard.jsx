@@ -4,6 +4,9 @@ import { CardCapsule as CardCapsule_} from "./CardCapsule"
 import { Row } from "../../Base/Components/Row"
 import { LeftColumn, MiddleColumn } from "@hrbolek/uoisfrontend-shared"
 import { MediumContent as MediumContent_ } from "./MediumContent"
+import { GroupRoles } from "../Vectors/GroupRoles"
+import { Departments } from "../Vectors/Departments"
+import { Faculties } from "../Vectors/Faculties"
 
 /**
  * A large card component for displaying detailed content and layout for an template entity.
@@ -38,6 +41,9 @@ export const LargeCard = ({ item, children, CardCapsule=CardCapsule_, MediumCont
                     <CardCapsule item={item} title="Detail">
                         <MediumContent item={item} />
                     </CardCapsule>
+                    <GroupRoles item={item} />
+                    <Departments item={item} />
+                    <Faculties item={item} />
                 </LeftColumn>
                 <MiddleColumn>
                     {children}
