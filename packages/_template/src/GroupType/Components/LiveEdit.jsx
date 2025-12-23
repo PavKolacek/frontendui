@@ -35,74 +35,69 @@ import { useEditAction } from "../../../../dynamic/src/Hooks/useEditAction";
  * @returns {JSX.Element}
  *   Interaktivní komponenta pro live editaci šablony, včetně spinneru a error handleru.
  */
-export const LiveEdit_ = ({ children, asyncAction=UpdateAsyncAction}) => {
-    const { onChange, onBlur, item } = useGQLEntityContext()
-    return (
-        <AsyncActionProvider 
-            item={item} 
-            queryAsyncAction={asyncAction}
-            options={{deferred: true, network: true}}
-            onChange={onChange}
-            onBlur={onBlur}
-        >
-            <LiveEditWrapper item={item}>
-                {children}
-                {/* <hr />
-                <pre>{JSON.stringify(item, null, 2)}</pre> */}
-            </LiveEditWrapper>
-        </AsyncActionProvider>
-    )
-}
+// export const LiveEdit_ = ({ children, asyncAction=UpdateAsyncAction}) => {
+//     const { onChange, onBlur, item } = useGQLEntityContext()
+//     return (
+//         <AsyncActionProvider 
+//             item={item} 
+//             queryAsyncAction={asyncAction}
+//             options={{deferred: true, network: true}}
+//             onChange={onChange}
+//             onBlur={onBlur}
+//         >
+//             <LiveEditWrapper item={item}>
+//                 {children}
+//                 {/* <hr />
+//                 <pre>{JSON.stringify(item, null, 2)}</pre> */}
+//             </LiveEditWrapper>
+//         </AsyncActionProvider>
+//     )
+// }
 
-const LiveEditWrapper = ({ item, children }) => {
-    const { run , error, loading, entity, data, onChange, onBlur } = useGQLEntityContext()
+// const LiveEditWrapper = ({ item, children }) => {
+//     const { run , error, loading, entity, data, onChange, onBlur } = useGQLEntityContext()
     
-    const handleEvent = useCallback((handler) => async (e) => {
-        const {id, value} = e?.target || {}
-        if (id === undefined || value === undefined) return 
-        if (item?.[id] === value) {
-            return;
-        }
-        const newItem = { ...item, [e.target.id]: e.target.value }
-        const newEvent = { target: { value: newItem } }
-        // console.log("LiveEditWrapper localOnChange start e", e, '=>', newEvent)
-        // const result = await delayer(()=>onChange(newEvent))
-        const result = await handler(newEvent)
-        // console.log("LiveEditWrapper localOnChange end e", e, '=>', newItem, '=>', result)
-        return result
-    }, [item])
+//     const handleEvent = useCallback((handler) => async (e) => {
+//         const {id, value} = e?.target || {}
+//         if (id === undefined || value === undefined) return 
+//         if (item?.[id] === value) {
+//             return;
+//         }
+//         const newItem = { ...item, [e.target.id]: e.target.value }
+//         const newEvent = { target: { value: newItem } }
+//         // console.log("LiveEditWrapper localOnChange start e", e, '=>', newEvent)
+//         // const result = await delayer(()=>onChange(newEvent))
+//         const result = await handler(newEvent)
+//         // console.log("LiveEditWrapper localOnChange end e", e, '=>', newItem, '=>', result)
+//         return result
+//     }, [item])
 
-    const bindedOnChange = useMemo(() => handleEvent(onChange), [onChange, handleEvent])
-    const bindedOnBlur = useMemo(() => handleEvent(onBlur), [onBlur, handleEvent])
+//     const bindedOnChange = useMemo(() => handleEvent(onChange), [onChange, handleEvent])
+//     const bindedOnBlur = useMemo(() => handleEvent(onBlur), [onBlur, handleEvent])
 
-    return (
-        <MediumEditableContent item={item} onChange={bindedOnChange} onBlur={bindedOnBlur} >
-            {children}
-            {/* <hr />
-            <pre>{JSON.stringify(item, null, 2)}</pre> */}
-        </MediumEditableContent>
-    )
-}
+//     return (
+//         <MediumEditableContent item={item} onChange={bindedOnChange} onBlur={bindedOnBlur} >
+//             {children}
+//             {/* <hr />
+//             <pre>{JSON.stringify(item, null, 2)}</pre> */}
+//         </MediumEditableContent>
+//     )
+// }
 
 
 export const LiveEdit = ({ item, children, asyncMutationAction=UpdateAsyncAction }) => {
     // const { run , error, loading, entity, data, onChange: contextOnChange, onBlur: contextOnBlur } = useGQLEntityContext()
     const {
-        draft,
-        dirty,
         loading: saving,
-        onChange, 
-        onBlur,
-        onCancel,
-        onConfirm,
+        onChange: handleChange, 
+        onBlur: handleBlur,
     } = useEditAction(asyncMutationAction, item, {
         mode: "live", 
         // onCommit: contextOnChange
     })
 
-    return (
-        
-        <MediumEditableContent item={item} onChange={onChange} onBlur={onBlur} >
+    return (        
+        <MediumEditableContent item={item} onChange={handleChange} onBlur={handleBlur} >
             {saving && <LoadingSpinner/>}
             {children}
         </MediumEditableContent>

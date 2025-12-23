@@ -79,6 +79,7 @@ export const useInfiniteScroll = ({
         result: null,
     }));
 
+    const inFlightRef = useRef(false);
     // refs pro stabilní přístup v async kódu
     const stateRef = useRef(state);
     useEffect(() => { stateRef.current = state; }, [state]);
@@ -111,42 +112,42 @@ export const useInfiniteScroll = ({
     const loadMore = useCallback(async () => {
         if (!enabledRef.current) return null;
 
-        const snap = stateRef.current;
-        if (snap.loading || !snap.hasMore) return null;
-
-        setState((prev) => ({ ...prev, loading: true, error: null }));
-
-        const params = filterRef.current;
+        // ✅ tvrdý lock - zabrání dvěma souběžným voláním se stejným skip
+        if (inFlightRef.current) return null;
+        inFlightRef.current = true;
 
         try {
-            console.log("calling with", params)
+            const snap = stateRef.current;
+            if (snap.loading || !snap.hasMore) return null;
+
+            setState((prev) => ({ ...prev, loading: true, error: null }));
+
+            const params = filterRef.current;
+            // console.log("loadMore.params", params)
             const result = await dispatch(asyncAction(params, gqlClient));
             const fetched = extractArrayFromThunkResult(result);
 
             setState((prev) => {
                 const nextItems = mergeArraysById(prev.items, fetched);
+
+                // ✅ posun skip podle skutečně fetchovaných položek (ne podle limit)
+                const fetchedCount = fetched.length;
                 const limit = params?.limit;
 
-                if (limit == null) {
-                    const hasMore = fetched.length > 0;
-                    if (!hasMore) onAll();
-                    return {
-                        ...prev,
-                        items: nextItems,
-                        filter: hasMore ? calculateNewFilter(prev.filter) : prev.filter,
-                        hasMore,
-                        loading: false,
-                        result,
-                    };
-                }
-
-                const hasMore = fetched.length === limit;
+                const hasMore = limit == null ? fetchedCount > 0 : fetchedCount === limit;
                 if (!hasMore) onAll();
+
+                const nextFilter = hasMore
+                    ? { ...prev.filter, skip: (prev.filter.skip || 0) + fetchedCount, limit: prev.filter.limit }
+                    : prev.filter;
+
+                // ✅ okamžitě aktualizuj ref, aby další load použil nový skip i před rerenderem
+                filterRef.current = nextFilter;
 
                 return {
                     ...prev,
                     items: nextItems,
-                    filter: hasMore ? calculateNewFilter(prev.filter) : prev.filter,
+                    filter: nextFilter,
                     hasMore,
                     loading: false,
                     result,
@@ -162,9 +163,10 @@ export const useInfiniteScroll = ({
                 error: e,
             }));
             return null;
+        } finally {
+            inFlightRef.current = false;
         }
-    }, [dispatch, asyncAction, gqlClient, calculateNewFilter, onAll]);
-
+    }, [dispatch, asyncAction, gqlClient, onAll]);
     // sentinel node
     const sentinelNodeRef = useRef(null);
     const sentinelRef = useCallback((node) => {

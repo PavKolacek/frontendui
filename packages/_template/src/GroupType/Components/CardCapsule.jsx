@@ -1,5 +1,4 @@
-import { CardCapsule as _CardCapsule} from "@hrbolek/uoisfrontend-shared"
-import { PersonFill } from "react-bootstrap-icons"
+import { CardCapsule as CardCapsule_ } from "../../Base/Components/CardCapsule"
 import { Link } from "./Link"
 
 /**
@@ -32,12 +31,12 @@ import { Link } from "./Link"
 export const CardCapsule = ({ item, children, title=null}) => {
     
     if (!title) {
-        title = <><PersonFill /> <Link item={item} /></>
+        title = <><Link item={item} /></>
     }
     return (
         
-        <_CardCapsule title={title}>
+        <CardCapsule_ title={title}>
             {children}
-        </_CardCapsule>
+        </CardCapsule_>
     )
 }

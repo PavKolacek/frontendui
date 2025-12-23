@@ -8,6 +8,27 @@ export const CardCapsuleBase = ({ title=null, header = null, children, item }) =
         </div>
     )
 }
+
+/**
+ * Inline styly pro komponentu {@link SimpleCardCapsule}.
+ *
+ * @type {Object<string, React.CSSProperties>}
+ * @property {React.CSSProperties} capsuleContainer
+ *  Kontejner “kapsle” se zaobleným rámečkem a vnitřním odsazením.
+ *  - `position: relative` umožňuje absolutně pozicovat titulky na hraně rámečku.
+ *  - Používá Bootstrap CSS proměnné pro barvu/šířku borderu.
+ *
+ * @property {React.CSSProperties} capsuleTitle
+ *  Levý horní “štítek” umístěný přes horní hranu rámečku (absolutně pozicovaný).
+ *  Typicky zobrazuje `title || header`.
+ *
+ * @property {React.CSSProperties} childrenWrapper
+ *  Obal pro obsah; zajišťuje plnou šířku a zarovnání obsahu doleva.
+ *
+ * @property {React.CSSProperties} capsuleRightCorner
+ *  Pravý horní “štítek” na hraně rámečku (zatím nepoužitý v renderu),
+ *  vhodný např. pro akce, stav, badge, počty apod.
+ */
 const styles = {
     capsuleContainer: {
         position: "relative", // Allows positioning of the title
@@ -63,6 +84,44 @@ const styles = {
     },    
 };
 
+/**
+ * Jednoduchý “card/capsule” wrapper s titulkem umístěným přes horní okraj rámečku.
+ * Hodí se jako vizuální sekce pro bloky obsahu (formuláře, detail, skupiny polí).
+ *
+ * Pozn.: Komponenta slučuje základní styl ({@link styles.capsuleContainer})
+ * s `style` předaným zvenku.
+ *
+ * @component
+ * @param {Object} props
+ * @param {string} [props.id]
+ *  ID atribut pro root element (např. pro anchor/scroll nebo testování).
+ * @param {string} [props.header]
+ *  Alternativní text titulku (použije se, pokud není `title`).
+ * @param {string} [props.title]
+ *  Primární text titulku. Pokud není uveden, použije se `header`.
+ * @param {React.ReactNode} [props.children]
+ *  Vnitřní obsah kapsle.
+ * @param {React.CSSProperties} [props.style]
+ *  Dodatečné inline styly sloučené do kontejneru kapsle.
+ * @param {Object<string, any>} [props.props]
+ *  Další props (např. `className`, `data-*`, `onClick`), aktuálně se ale
+ *  nepředávají na root element (viz poznámka níže).
+ *
+ * @returns {JSX.Element}
+ *
+ * @example
+ * <SimpleCardCapsule
+ *   id="basic-info"
+ *   title="Základní údaje"
+ *   style={{ marginTop: 24 }}
+ * >
+ *   <FormFields />
+ * </SimpleCardCapsule>
+ *
+ * @remarks
+ * - V ukázce kódu máš `id={{id}}`, správně má být `id={id}`.
+ * - Pokud chceš podporovat “zbytek props”, předej je na root: `<div {...props} ...>`.
+ */
 export const SimpleCardCapsule = ({ id, header, title, children, style, ...props }) => {
     return (
         <div id={{id}} style={{...styles.capsuleContainer, ...style}}>

@@ -8,13 +8,13 @@ import { useGQLEntityContext } from "../../Base/Helpers/GQLEntityProvider";
 export const ConfirmEdit = ({ item, children }) => {
     const { run , error, loading, entity, data, onChange: contextOnChange, onBlur: contextOnBlur } = useGQLEntityContext()
     
-    const localOnMutationEvent = useCallback((mutationHandler, notifyHandler) => async (e) => {
-        const newItem = { ...item, [e.target.id]: e.target.value }
-        const newEvent = { target: { value: newItem } }
+    // const localOnMutationEvent = useCallback((mutationHandler, notifyHandler) => async (e) => {
+    //     const newItem = { ...item, [e.target.id]: e.target.value }
+    //     const newEvent = { target: { value: newItem } }
         
-        await notifyHandler(newEvent)
-        return await mutationHandler(e)
-    })
+    //     await notifyHandler(newEvent)
+    //     return await mutationHandler(e)
+    // })
 
     const {
         draft,

@@ -3,9 +3,8 @@ import { LargeFragment } from "./Fragments";
 import { createAsyncGraphQLAction2 } from "../../../../dynamic/src/Core/createAsyncGraphQLAction2";
 
 const DeleteMutationStr = `
-mutation DeleteMutation($id: UUID!, $lastchange: DateTime!) {
-  result: Delete(
-    item : {id: $id, lastchange: $lastchange}
+mutation groupTypeDelete(
+    groupType: {id: $groupType_id, lastchange: $groupType_lastchange}
   ) {
     ... on GQLModelDeleteError {
       failed
@@ -15,6 +14,14 @@ mutation DeleteMutation($id: UUID!, $lastchange: DateTime!) {
         ...Large
       }
     }
+  }
+}
+
+mutation groupTypeDelete($groupType_id: UUID!, $groupType_lastchange: DateTime!) {
+  groupTypeDelete(
+    groupType: {id: $groupType_id, lastchange: $groupType_lastchange}
+  ) {
+    ...GroupTypeGQLModelDeleteError
   }
 }
 `

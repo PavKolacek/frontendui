@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { createContext } from "react";
-import { useAsync, useAsyncThunkAction } from "../../../../dynamic/src/Hooks";
+import { useAsyncThunkAction } from "../../../../dynamic/src/Hooks";
 import { useState } from "react";
 import { CreateDelayer, ErrorHandler, LoadingSpinner } from "@hrbolek/uoisfrontend-shared";
 
