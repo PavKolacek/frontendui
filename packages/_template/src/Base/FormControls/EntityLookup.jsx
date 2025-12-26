@@ -107,7 +107,7 @@ export const EntityLookup = ({
     }, [asyncAction, skip, limit])
 
     const handleSelect = useCallback((item) => {
-        console.log("EntityLookup.handleSelect", item)
+        // console.log("EntityLookup.handleSelect", item)
         setValue_(prev => (item || prev))
 
         if (onChange) {
