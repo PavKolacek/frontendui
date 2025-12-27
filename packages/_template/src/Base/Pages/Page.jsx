@@ -54,20 +54,32 @@ const PageItemInnerStructure = ({
     PageNavbar=null,
     ItemLayout=LargeCard,
     SubPage=GeneratedContentBase,
+    OtherComponents=[],
     children
 }) => {
     const { item } = useGQLEntityContext()
     if (!item) return <>Položka nenalezena</>
+    
+    // Components: [A, B, C] => <A><B><C>{children}</C></B></A>
+    const content = (OtherComponents || []).reduceRight((acc, Component) => {
+        if (!Component) return acc;
+        return <Component item={item}>{acc}</Component>;
+    }, children);
+
     return (
         <>
             {PageNavbar && <PageNavbar item={item} />}
             <ItemLayout item={item} >
-                {SubPage && <SubPage item={item}>
-                    {children}
-                </SubPage>}
+                {SubPage ? (
+                    <SubPage item={item}>
+                        {content}
+                    </SubPage>
+                ):(
+                    {content}
+                )}
             </ItemLayout>        
         </>
-    )    
+    );    
 }
 
 
