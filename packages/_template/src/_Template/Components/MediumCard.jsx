@@ -31,8 +31,8 @@ import { Link } from "./Link"
 export const MediumCard = ({ item, children }) => {
     return (
         <CardCapsule title={<><PersonFill /> <Link item={item} /></>}>
+            {children}
             <MediumContent item={item}>
-                {children}
             </MediumContent>
         </CardCapsule>
     )
