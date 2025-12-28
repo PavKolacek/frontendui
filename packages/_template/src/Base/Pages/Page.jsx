@@ -64,11 +64,12 @@ const PageItemInnerStructure = ({
     const content = (OtherComponents || []).reduceRight((acc, Component) => {
         if (!Component) return acc;
         return <Component item={item}>{acc}</Component>;
-    }, children);
+    }, null);
 
     return (
         <>
             {PageNavbar && <PageNavbar item={item} />}
+            {children}
             <ItemLayout item={item} >
                 {SubPage ? (
                     <SubPage item={item}>
@@ -112,6 +113,7 @@ export const PageItemBase = ({
     PageNavbar=null,
     ItemLayout=LargeCard,
     SubPage=GeneratedContentBase,
+    children
 }) => {
     const {id} = useParams()
     const item = {id}
@@ -121,6 +123,7 @@ export const PageItemBase = ({
                 PageNavbar={PageNavbar}
                 ItemLayout={ItemLayout}
                 SubPage={SubPage}
+                children={children}
             />
         </AsyncActionProvider>
     )
