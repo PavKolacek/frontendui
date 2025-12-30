@@ -109,7 +109,7 @@ function generateVariableDefinitions(args, typesByName) {
                 let inputDef = typesByName[named.name];
                 if (inputDef && inputDef.inputFields) {
                     inputDef.inputFields.forEach(field => {
-                        varDefs.push(`$${arg.name}_${field.name}: ${variableTypeString(field.type)}`);
+                        varDefs.push(`$${field.name}: ${variableTypeString(field.type)}`);
                     });
                 } else {
                     varDefs.push(`$${arg.name}: ${variableTypeString(arg.type)}`);
@@ -134,7 +134,7 @@ function generateFieldArguments(args, typesByName) {
                 if (inputDef && inputDef.inputFields) {
                     let fields = [];
                     inputDef.inputFields.forEach(field => {
-                        fields.push(`${field.name}: $${arg.name}_${field.name}`);
+                        fields.push(`${field.name}: $${field.name}`);
                     });
                     let objStr = "{" + fields.join(", ") + "}";
                     parts.push(`${arg.name}: ${objStr}`);
@@ -150,10 +150,10 @@ function generateFieldArguments(args, typesByName) {
 }
 
 function getFragmentName(typeName) {
-    if (typeName.endsWith("GQLModelUpdateError")) {
+    if (typeName?.endsWith("GQLModelUpdateError")) {
         return "Error";
-    } else if (typeName.endsWith("GQLModel")) {
-        return typeName.slice(0, -"GQLModel".length);
+    } else if (typeName?.endsWith("GQLModel")) {
+        return typeName?.slice(0, -"GQLModel".length);
     } else {
         return typeName;
     }
@@ -182,6 +182,7 @@ function generateSelectionSetWithFragments(typeRef, typesByName, fragments, dept
             possibleTypes = unionDef ? (unionDef.possibleTypes || []) : [];
         }
         let unionLines = [];
+        // possibleTypes = possibleTypes.reverse()
         possibleTypes.forEach(possible => {
             const possibleName = possible.name;
             if (!fragments[possibleName]) {
@@ -325,6 +326,21 @@ function generateEntityQueryExample(typeName, typesByName, maxDepth = 2) {
     return query;
 }
 
+export function generateEntityQuery(introspection, typeName) {
+    const schemaData = introspection.__schema;
+    // console.log("generateQuery.schemaData", schemaData)
+    const types = schemaData.types;
+    const typesByName = {};
+    for (const t of types) {
+        if (t.name.startsWith("__")) continue;
+        typesByName[t.name] = t;
+    }
+
+    const result = generateEntityQueryExample(typeName, typesByName)
+    return result
+
+}
+
 export function generateQuery(introspection, typeName) {
     const schemaData = introspection.__schema;
     // console.log("generateQuery.schemaData", schemaData)
@@ -352,6 +368,23 @@ export function generateQuery(introspection, typeName) {
     }
     return null
 }
+function isList(typeRef) {
+    if (!typeRef) return false;
+
+    // unwrap top NON_NULL
+    while (typeRef && typeRef.kind === "NON_NULL") {
+        typeRef = typeRef.ofType;
+    }
+    if (!typeRef || typeRef.kind !== "LIST") return false;
+
+    let inner = typeRef.ofType;
+    while (inner && inner.kind === "NON_NULL") {
+        inner = inner.ofType;
+    }
+
+    return inner.name
+}
+
 
 function isListOfNamedType(typeRef, typeName) {
     if (!typeRef) return false;
@@ -401,47 +434,68 @@ export function generateQueryVector(introspection, typeName) {
     return generateQueryExample(matchingField, typesByName);
 }
 
+export function generateQueryVectorFields(introspection) {
+    const schemaData = introspection.__schema;
+    const types = schemaData.types;
+
+    const typesByName = {};
+    for (const t of types) {
+        if (t.name.startsWith("__")) continue;
+        typesByName[t.name] = t;
+    }
+
+    const queryTypeName = schemaData.queryType ? schemaData.queryType.name : null;
+    const queryType = typesByName[queryTypeName];
+    if (!queryType?.fields) return null;
+
+    // najdi field, který vrací list daného typu
+    const queryFieldTypes = queryType.fields.map(field => isList(field.type));
+
+    return queryFieldTypes
+}
+
+
 export function findMutationsReturningUnionWithType(introspection, typeName) {
-  const schemaData = introspection.__schema;
-  const types = schemaData.types;
+    const schemaData = introspection.__schema;
+    const types = schemaData.types;
 
-  // typesByName
-  const typesByName = {};
-  for (const t of types) {
-    if (t.name.startsWith("__")) continue;
-    typesByName[t.name] = t;
-  }
+    // typesByName
+    const typesByName = {};
+    for (const t of types) {
+        if (t.name.startsWith("__")) continue;
+        typesByName[t.name] = t;
+    }
 
-  const mutationTypeName = schemaData.mutationType ? schemaData.mutationType.name : null;
-  const mutationType = mutationTypeName ? typesByName[mutationTypeName] : null;
-  if (!mutationType?.fields) return [];
+    const mutationTypeName = schemaData.mutationType ? schemaData.mutationType.name : null;
+    const mutationType = mutationTypeName ? typesByName[mutationTypeName] : null;
+    if (!mutationType?.fields) return [];
 
-  // helper: vrátí possibleTypes pro union base (někdy jsou na base, někdy jen v definici)
-  function getUnionPossibleTypes(unionBase) {
-    if (!unionBase) return [];
-    if (unionBase.possibleTypes && unionBase.possibleTypes.length) return unionBase.possibleTypes;
-    const unionDef = typesByName[unionBase.name];
-    return unionDef?.possibleTypes || [];
-  }
+    // helper: vrátí possibleTypes pro union base (někdy jsou na base, někdy jen v definici)
+    function getUnionPossibleTypes(unionBase) {
+        if (!unionBase) return [];
+        if (unionBase.possibleTypes && unionBase.possibleTypes.length) return unionBase.possibleTypes;
+        const unionDef = typesByName[unionBase.name];
+        return unionDef?.possibleTypes || [];
+    }
 
-  const matches = mutationType.fields
-    .filter(field => {
-      const base = getNamedType(field.type); // unwrap LIST/NON_NULL až na named
-      // base.kind bývá "UNION" (v introspekci), ale pojistíme se přes definici
-      const def = typesByName[base?.name];
-      const isUnion = base?.kind === "UNION" || def?.kind === "UNION";
-      if (!isUnion) return false;
+    const matches = mutationType.fields
+        .filter(field => {
+            const base = getNamedType(field.type); // unwrap LIST/NON_NULL až na named
+            // base.kind bývá "UNION" (v introspekci), ale pojistíme se přes definici
+            const def = typesByName[base?.name];
+            const isUnion = base?.kind === "UNION" || def?.kind === "UNION";
+            if (!isUnion) return false;
 
-      const possibleTypes = getUnionPossibleTypes(base);
-      return possibleTypes.some(t => t?.name === typeName);
-    })
-    .map(field => ({
-      name: field.name,
-      returnUnion: getNamedType(field.type)?.name,
-      query: generateQueryExample(field, typesByName, "mutation"), // ukázková mutation
-    }));
+            const possibleTypes = getUnionPossibleTypes(base);
+            return possibleTypes.some(t => t?.name === typeName);
+        })
+        .map(field => ({
+            name: field.name,
+            returnUnion: getNamedType(field.type)?.name,
+            query: generateQueryExample(field, typesByName, "mutation"), // ukázková mutation
+        }));
 
-  return matches;
+    return matches;
 }
 
 export const mutationQueries = (introspection, typename) => {
