@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react"; // Enables React-specific optimizations and HMR
 import path from "path"; // Provides utilities for working with file and directory paths
