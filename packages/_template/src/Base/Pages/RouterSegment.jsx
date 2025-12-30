@@ -1,6 +1,8 @@
 import { GenericURIRoot } from "../Components/Link"
 // import { LinkURI } from "../Components/Link"
 import { Page } from "./Page"
+import { PageCatch } from "./PageCatch"
+import { PageVector } from "./PageVector"
 // import { VectorPage } from "./VectorPage"
 
 /**
@@ -36,6 +38,22 @@ export const BaseRouterSegments = [
     {
         path: `/${GenericURIRoot}/:typename/:action/:id`,
         element: (<Page />),
+    },
+    {
+        path: `/${GenericURIRoot}/:typename/:action/`,
+        element: (<PageVector />),
+    },
+    {
+        path: `/`,
+        element: (<PageCatch />),
+    },
+    {
+        path: `/${GenericURIRoot}/`,
+        element: (<PageCatch />),
+    },
+    {
+        path: `*`,
+        element: (<PageCatch />),
     },
     // {
     //     path: `/${LinkURI}`,

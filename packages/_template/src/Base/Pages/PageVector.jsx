@@ -12,6 +12,7 @@ import { Col } from "../Components/Col"
 import { Card } from "react-bootstrap"
 import { SimpleCardCapsuleRightCorner } from "@hrbolek/uoisfrontend-shared"
 import { CopyButton } from "../Components/CopyButton"
+import { Table } from "../Components/Table"
 
 
 export const GeneratedContentBase = ({ item }) => {
@@ -133,13 +134,11 @@ export const PageItemBase = ({
 }
 
 
-export const PageContent = ({queryById, queryVector, mutations, children, params}) => {
+export const PageVectorContent = ({queryById, queryVector, mutations, children, params}) => {
      const gqlContext= useGQLEntityContext()
      const {id, typename, action="view"} = useParams()
-     const { item } = gqlContext || {}
-    if (!item) return (<div>Položka nenalezena<pre>{JSON.stringify(gqlContext)}</pre></div>)
+     const { item, data } = gqlContext || {}
     let content = children
-    const attribute_value = item?.[action]
     if ((action === "__def"))
         content = <Row>
             <Col>
@@ -172,27 +171,20 @@ export const PageContent = ({queryById, queryVector, mutations, children, params
                 )
             })}
         </Row>
-    if ((action === "view"))
-        content = (
-            <>
-                <MediumCardScalars key={"MediumCardScalars"} item={item} />
-                <MediumCardVectors key={"MediumCardVectors"} item={item} />
-            </>
-        )
-    
-    if (Array.isArray(attribute_value)) 
-        content = <VectorAttribute attribute_name={action} item={item} />
-    else if (attribute_value)
-        content = <ScalarAttribute attribute_name={action} item={item} />
+    if ((action === "list")) {
+        const dataResponse = data?.data || {}
+        const list = Object.entries(dataResponse)?.[0]?.[1] || []
+
+        content = <Table data={list} />
+    }
+        
     return (<>
-        <LargeCard item={item} >
-            {content}
-            {/* <MediumCardScalars key={"MediumCardScalars"} item={item} />
-            <MediumCardVectors key={"MediumCardVectors"} item={item} /> */}
-        </LargeCard>
+        
+        {content}
+        
         <Row>
             <Col>
-                <CardCapsule header="QueryById">
+                <CardCapsule header="queryVector">
                     <pre>{queryById}</pre>
                 </CardCapsule>
             </Col>
@@ -203,7 +195,7 @@ export const PageContent = ({queryById, queryVector, mutations, children, params
             </Col>
             <Col>
                 <CardCapsule header="Response">
-                    <pre>{JSON.stringify(item, null, 2)}</pre>
+                    <pre>{JSON.stringify(data, null, 2)}</pre>
                 </CardCapsule>
             </Col>
         </Row>
@@ -211,18 +203,22 @@ export const PageContent = ({queryById, queryVector, mutations, children, params
     )
 }
 
-export const Page = ({ children }) => {
+export const PageVector = ({ children }) => {
     const {id, typename, action="view"} = useParams()
     // const id = "51d101a0-81f1-44ca-8366-6cf51432e8d6";
     const item = {id}
-    const { ByIdAsyncAction, queryById, queryVector, mutations } = useGQLType(typename || "RoleGQLModel")    
+    const { 
+        ByIdAsyncAction, queryById, 
+        PageAsyncAction, queryVector, 
+        mutations 
+    } = useGQLType(typename || "RoleGQLModel")    
     return (
         // <div>Hello</div>
         <>{ByIdAsyncAction&&
-            <AsyncActionProvider item={item} queryAsyncAction={ByIdAsyncAction}>
-                <PageContent queryById={queryById} queryVector={queryVector} mutations={mutations} params={item}>
+            <AsyncActionProvider item={item} queryAsyncAction={PageAsyncAction}>
+                <PageVectorContent queryById={queryById} queryVector={queryVector} mutations={mutations} params={item}>
                     {children}
-                </PageContent>
+                </PageVectorContent>
             </AsyncActionProvider>
         }
         {!ByIdAsyncAction&&
