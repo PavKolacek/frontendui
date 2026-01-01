@@ -122,9 +122,9 @@ const styles = {
  * - V ukázce kódu máš `id={{id}}`, správně má být `id={id}`.
  * - Pokud chceš podporovat “zbytek props”, předej je na root: `<div {...props} ...>`.
  */
-export const SimpleCardCapsule = ({ id, header, title, children, style, ...props }) => {
+export const SimpleCardCapsule = ({ id, header, title, children, style, className, ...props }) => {
     return (
-        <div id={{id}} style={{...styles.capsuleContainer, ...style}}>
+        <div id={{id}} style={{...styles.capsuleContainer, ...style}} className={className} >
             <span style={styles.capsuleTitle}>{title || header}</span>
             <div style={styles.childrenWrapper}>
                 {children}

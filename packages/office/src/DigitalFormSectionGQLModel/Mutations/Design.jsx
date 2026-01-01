@@ -11,7 +11,7 @@ import { UpdateAsyncAction } from "../Queries";
 
 const DefaultContent = ({ item, onChange=(e)=>null, onBlur=(e)=>null }) => {
     return (<>
-        {/* {JSON.stringify(item)} */}
+    {/* {JSON.stringify(item)} */}
         <Input 
             id="id" 
             className="form-control"
@@ -61,10 +61,9 @@ const DefaultContent = ({ item, onChange=(e)=>null, onBlur=(e)=>null }) => {
             onChange={onChange} 
             onBlur={onBlur} 
             value={item?.repeatableMax || ""} 
-        />
+        />    
     </>)
-}
-
+} 
 const mutationAsyncAction = UpdateAsyncAction
 
 const permissions = {

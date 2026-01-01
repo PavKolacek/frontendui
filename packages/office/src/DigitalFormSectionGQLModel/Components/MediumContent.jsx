@@ -1,3 +1,4 @@
+import { Attribute } from "../../../../_template/src/Base/Components/Attribute"
 import { Col } from "../../../../_template/src/Base/Components/Col"
 import { Row } from "../../../../_template/src/Base/Components/Row"
 import { Link } from "./Link"
@@ -28,7 +29,9 @@ export const MediumContent = ({ item, children}) => {
     
     return (
         <>
-            <pre>{JSON.stringify(item, null, 2)}</pre>
+            <Attribute item={item} label="Identifikátor" attribute_name="name" />
+            <Attribute item={item} label="Label" attribute_name="label" />
+            {/* <pre>{JSON.stringify(item, null, 2)}</pre> */}
             {children}
         </>
         
