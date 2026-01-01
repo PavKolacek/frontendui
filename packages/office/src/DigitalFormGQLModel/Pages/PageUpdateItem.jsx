@@ -323,10 +323,7 @@ const normalizeSubsectionsForSection = (section, formSectionDef) => {
  * ============================================================================= */
 
 export const UpdateField = ({
-    sectionDef,
-    sectionInstance,
     fieldDef,
-    submission,
     digital_submission_field,
     // onFieldValueChange,
     onSubmissionFieldChange,
@@ -389,21 +386,13 @@ const empty = {}
 const dummy = () => { }
 export const UpdateFormSection = ({
     formSectionDef,
-    submission,
     level = 2,
     dummy = true,
     mode = "design",
 
     digital_submission_section = empty,
-    // value events
-    // onFieldValueChange=dummy,
-    onSubmissionSectionChange = dummy,//onSubmissionSectionChange
-    // // design events
-    // onAddSubSection,
-    // onRemoveSection,
-    // onAddField,
-    // onRemoveField,
-    // handleFormItemDefChange=dummy
+    onSubmissionSectionChange = dummy,
+
 }) => {
 
     const handleSubmissionFieldChange = useCallback((submission_field) => {
@@ -615,17 +604,11 @@ export const UpdateFormSection = ({
                                 const filtered = submission_fields.filter(
                                     sf => sf?.fieldId === form_field?.id
                                 )
-                                if (filtered.length === 0) {
-                                    const submission_field = {
-                                        id: crypto.randomUUID(),
-                                        sectionId: digital_submission_section?.id,
-                                        submissionId: digital_submission_section?.submissionId,
-                                        fieldId: form_field?.id,
-                                        value: ""
-                                    }
-                                    return (
+                                
+                                return (<div key={form_field?.id}>
+                                    {filtered.map(submission_field =>
                                         <UpdateField
-                                            key={form_field?.id}
+                                            key={submission_field?.id}
                                             fieldDef={form_field}
                                             reRead={reRead}
                                             mode={mode}
@@ -633,23 +616,8 @@ export const UpdateFormSection = ({
                                             onRemoveField={onRemoveField}
                                             onSubmissionFieldChange={handleSubmissionFieldChange}
                                         />
-                                    )
-                                } else {
-                                    return (<div key={form_field?.id}>
-                                        {filtered.map(submission_field =>
-                                            <UpdateField
-                                                key={submission_field?.id}
-                                                fieldDef={form_field}
-                                                reRead={reRead}
-                                                mode={mode}
-                                                digital_submission_field={submission_field}
-
-                                                onRemoveField={onRemoveField}
-                                                onSubmissionFieldChange={handleSubmissionFieldChange}
-                                            />
-                                        )}
-                                    </div>)
-                                }
+                                    )}
+                                </div>)                                
                             }
                         )}
                         {(formSectionDef?.sections || []).map(
@@ -658,41 +626,18 @@ export const UpdateFormSection = ({
                                 const filtered = submissionsections.filter(
                                     s => s?.formSectionId === form_section?.id
                                 )
-                                if (filtered.length === 0) {
-                                    const new_submission_section = {
-                                        id: crypto.randomUUID(),
-                                        sectionId: digital_submission_section?.id,
-                                        submissionId: digital_submission_section?.submissionId,
-                                        formSectionId: form_section?.id,
-                                        fields: [],
-                                        sections: []
-                                    }
-                                    return (
-                                        <UpdateSectionWrap
-                                            key={form_section?.id}
-                                            formSectionDef={form_section}
-                                            level={level + 1}
-                                            dummy={dummy}
-                                            mode={mode}
-                                            digital_submission_sections={[new_submission_section]}
-                                            onSubmissionSectionChange={handleSubmissionSectionChange}
+                                return (
+                                    <UpdateSectionWrap
+                                        key={form_section?.id}
+                                        formSectionDef={form_section}
+                                        level={level + 1}
+                                        dummy={dummy}
+                                        mode={mode}
+                                        digital_submission_sections={filtered}
+                                        onSubmissionSectionChange={handleSubmissionSectionChange}
 
-                                        />
-                                    )
-                                } else {
-                                    return (
-                                        <UpdateSectionWrap
-                                            key={form_section?.id}
-                                            formSectionDef={form_section}
-                                            level={level + 1}
-                                            dummy={dummy}
-                                            mode={mode}
-                                            digital_submission_sections={filtered}
-                                            onSubmissionSectionChange={handleSubmissionSectionChange}
-
-                                        />
-                                    )
-                                }
+                                    />
+                                )
                             }
                         )}
                     </div>
