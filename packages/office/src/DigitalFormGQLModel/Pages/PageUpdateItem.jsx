@@ -10,13 +10,22 @@ import { Dialog } from "../../../../_template/src/Base/FormControls/Dialog";
 import { DesignButton as DesignFieldButton } from "../../DigitalFormFieldGQLModel/Mutations/Design";
 import { DesignButton as DesignSectionButton } from "../../DigitalFormSectionGQLModel/Mutations/Design";
 import { AsyncActionProvider, useGQLEntityContext } from "../../../../_template/src/Base/Helpers/GQLEntityProvider";
-import { DeleteAsyncAction as DeleteSectionAsyncAction, InsertAsyncAction as InsertSectionAsyncAction, ReadAsyncAction as ReadFormSectionAsyncAction, UpdateAsyncAction, UpdateAsyncAction as UpdateFormAsyncAction } from "../../DigitalFormSectionGQLModel/Queries";
+import { 
+    DeleteAsyncAction as DeleteSectionAsyncAction, 
+    InsertAsyncAction as InsertSectionAsyncAction, 
+    ReadAsyncAction as ReadFormSectionAsyncAction, 
+    UpdateAsyncAction, 
+    UpdateAsyncAction as UpdateFormAsyncAction } from "../../DigitalFormSectionGQLModel/Queries";
 import { useEffect } from "react";
 import { AsyncStateIndicator } from "../../../../_template/src/Base/Helpers/AsyncStateIndicator";
-import { DeleteAsyncAction as DeleteFieldAsyncAction, InsertAsyncAction as InsertFieldAsyncAction, ReadAsyncAction as ReadFormFieldAsyncAction } from "../../DigitalFormFieldGQLModel/Queries";
+import { 
+    DeleteAsyncAction as DeleteFieldAsyncAction, 
+    InsertAsyncAction as InsertFieldAsyncAction, 
+    UpdateAsyncAction as UpdateFieldAsyncAction,
+    ReadAsyncAction as ReadFormFieldAsyncAction } from "../../DigitalFormFieldGQLModel/Queries";
 import { useAsyncThunkAction } from "../../../../dynamic/src/Hooks";
 import { DeleteButton as DeleteFormSectionButton } from "../../DigitalFormSectionGQLModel/Mutations/Delete";
-import { UpdateButton } from "../../DigitalFormFieldGQLModel/Mutations/Update";
+import { UpdateButton as UpdateFormFieldButton } from "../../DigitalFormFieldGQLModel/Mutations/Update";
 import { DeleteButton as DeleteFormFieldButton } from "../../DigitalFormFieldGQLModel/Mutations/Delete";
 import { CreateButton as CreateFormSectionButton } from "../../DigitalFormSectionGQLModel/Mutations/Create";
 import { CreateButton as CreateFormFieldButton } from "../../DigitalFormFieldGQLModel/Mutations/Create";
@@ -336,6 +345,10 @@ export const UpdateField = ({
         run: deleteField, error: errorDeleteField, loading: deletingField,
         // entity, data 
     } = useAsyncThunkAction(DeleteFieldAsyncAction, empty, { deferred: true })
+    const {
+        run: updateField, error: errorUpdateField, loading: updatingField,
+        // entity, data 
+    } = useAsyncThunkAction(UpdateFieldAsyncAction, empty, { deferred: true })
     const handleDelete = useCallback(async () => {
         const result = await deleteField({
             id: fieldDef?.id,
@@ -344,46 +357,101 @@ export const UpdateField = ({
         onRemoveField()
     }, [deleteField, onRemoveField])
 
+    const handleUpdate = useCallback(async () => {
+        const result = await updateField({
+            id: fieldDef?.id,
+            lastchange: fieldDef?.lastchange
+        })
+        // onRemoveField()
+    }, [deleteField, onRemoveField])
+
     const handleChange = (e) => {
         onSubmissionFieldChange({
             ...digital_submission_field,        // ← zachová id
             fieldId: fieldDef?.id,
+            field: fieldDef,
             value: e.target.value,
         });
     };
     const value = digital_submission_field?.value ?? value ?? ""
     return (
-        <SimpleCardCapsule
-            className="border-start border-2 border-success"
-            title={<>
-                <strong>{fieldDef?.label ?? "------------"}</strong>{" "}
-                {(mode === "design") && <small>{fieldDef?.name ?? "------------"}</small>}{" "}
-                {fieldDef?.required ? <strong>*</strong> : null}
-            </>}
-            style={{ paddingLeft: 12, border: "none", borderLeftx: "2px solid #3a7900ff", }}
-        >
-            {(mode === "design") &&
-                <SimpleCardCapsuleRightCorner>
-                    <ConfirmClickButton className="btn btn-sm border-0" type="button" onClick={handleDelete} title="Remove field">
-                        🗑
-                    </ConfirmClickButton>
-                </SimpleCardCapsuleRightCorner>
-            }
-            {/* {JSON.stringify(fieldDef)}
-            <hr/>
-            {JSON.stringify(sectionInstance)} */}
+        <AsyncActionProvider item={fieldDef} queryAsyncAction={ReadFormFieldAsyncAction} options={{ deferred: true }}>
+            <SimpleCardCapsule
+                className="border-start border-2 border-success"
+                title={<>
+                    <strong>{fieldDef?.label ?? "------------"}</strong>{" "}
+                    {(mode === "design") && <small>{fieldDef?.name ?? "------------"}</small>}{" "}
+                    {fieldDef?.required ? <strong>*</strong> : null}
+                </>}
+                style={{ paddingLeft: 12, border: "none", borderLeftx: "2px solid #3a7900ff", }}
+            >
+                {(mode === "design") &&
+                    <SimpleCardCapsuleRightCorner>
+                        <UpdateFormFieldButton  className="btn btn-sm btn-outline-primary border-0" >
+                            🖍
+                        </UpdateFormFieldButton>
+                        {/* <ConfirmClickButton className="btn btn-sm border-0" type="button" onClick={handleUpdate} title="Upravit field">
+                            Pencil
+                        </ConfirmClickButton> */}
+                        <ConfirmClickButton className="btn btn-sm border-0" type="button" onClick={handleDelete} title="Remove field">
+                            🗑
+                        </ConfirmClickButton>
+                    </SimpleCardCapsuleRightCorner>
+                }
+                {/* {JSON.stringify(fieldDef)}
+                <hr/>
+                {JSON.stringify(sectionInstance)} */}
 
-            <Input
-                className="form-control" value={value}
-                onChange={handleChange}
-                placeholder="Enter value…"
-            />
-        </SimpleCardCapsule>
+                <Input
+                    className="form-control" value={value}
+                    onChange={handleChange}
+                    placeholder="Enter value…"
+                />
+            </SimpleCardCapsule>
+        </AsyncActionProvider>
     );
 };
 
 const empty = {}
 const dummy = () => { }
+export const UpdateFormSectionFields = ({ 
+    formSectionDefFields=[], 
+    digital_submission_sectionFields=[], 
+    reRead, 
+    mode, 
+    onRemoveField, 
+    onSubmissionFieldChange
+}) => { 
+    const formfieldsSorted = formSectionDefFields?.toSorted((a, b) => (a?.order||0)-(b?.order||0)) ?? []
+    const digital_submission_sectionFieldsSorted = digital_submission_sectionFields?.toSorted((a, b) => (a?.order||0)-(b?.order||0)) ?? []
+    return (<>
+        {(formfieldsSorted || []).map(
+            form_field => {
+                const submission_fields = digital_submission_sectionFieldsSorted
+                const filtered = submission_fields.filter(
+                    sf => sf?.fieldId === form_field?.id
+                )
+                
+                return (<div key={form_field?.id}>
+                    {filtered.map(submission_field =>
+                        <UpdateField
+                            key={submission_field?.id}
+                            fieldDef={form_field}
+                            reRead={reRead}
+                            mode={mode}
+                            digital_submission_field={submission_field}
+                            onRemoveField={onRemoveField}
+                            onSubmissionFieldChange={onSubmissionFieldChange}
+                        />
+                    )}
+                </div>)                                
+            }
+        )}
+
+    </>)
+}
+
+
 export const UpdateFormSection = ({
     formSectionDef,
     level = 2,
@@ -489,6 +557,7 @@ export const UpdateFormSection = ({
         })
         console.log("onAddSubSection.result", result)
     }, [insertSection])
+
     const onRemoveSection = useCallback(async (e) => {
         console.log("onRemoveSection", e)
         const result = await deleteSection({
@@ -498,6 +567,7 @@ export const UpdateFormSection = ({
         console.log("onRemoveSection.result", result)
         reRead()
     }, [reRead, deleteSection])
+
     const onAddField = useCallback(async (e) => {
         console.log("onAddField", e)
         const itemid = crypto.randomUUID();
@@ -511,6 +581,7 @@ export const UpdateFormSection = ({
         })
         console.log("onAddField.result", result)
     }, [insertField])
+
     const onRemoveField = useCallback(async (e) => {
         console.log("onRemoveField", e)
         const result = await deleteField(e)
@@ -576,13 +647,13 @@ export const UpdateFormSection = ({
                     <SimpleCardCapsuleRightCorner>
                         <DesignSectionButton
                             className="btn btn-sm btn-outline-primary border-0"
-                        >Pencil</DesignSectionButton>
+                        >🖍</DesignSectionButton>
 
                         <ConfirmClickButton className="btn btn-sm border-0" onClick={onAddSubSection}>
-                            + Sekce  X
+                            + Sekce
                         </ConfirmClickButton>
                         <ConfirmClickButton className="btn btn-sm border-0" onClick={onAddField}>
-                            + Položka  X
+                            + Položka
                         </ConfirmClickButton>
                         <ConfirmClickButton className="btn btn-sm border-0" onClick={onRemoveSection}>
                             🗑
@@ -598,35 +669,23 @@ export const UpdateFormSection = ({
                     {formSectionDef?.description ?? "--NEPOPSÁN--"}
 
                     <div>
-                        {(formSectionDef?.fields || []).map(
-                            form_field => {
-                                const submission_fields = digital_submission_section?.fields || []
-                                const filtered = submission_fields.filter(
-                                    sf => sf?.fieldId === form_field?.id
-                                )
-                                
-                                return (<div key={form_field?.id}>
-                                    {filtered.map(submission_field =>
-                                        <UpdateField
-                                            key={submission_field?.id}
-                                            fieldDef={form_field}
-                                            reRead={reRead}
-                                            mode={mode}
-                                            digital_submission_field={submission_field}
-                                            onRemoveField={onRemoveField}
-                                            onSubmissionFieldChange={handleSubmissionFieldChange}
-                                        />
-                                    )}
-                                </div>)                                
-                            }
-                        )}
+                        <UpdateFormSectionFields 
+                            formSectionDefFields={formSectionDef?.fields || []}
+                            digital_submission_sectionFields={digital_submission_section?.fields || []}
+                            reRead={reRead}
+                            mode={mode}
+                            onRemoveField={onRemoveField}
+                            onSubmissionFieldChange={handleSubmissionFieldChange}
+                        />
+                        
                         {(formSectionDef?.sections || []).map(
                             form_section => {
                                 const submissionsections = digital_submission_section?.sections || []
                                 const filtered = submissionsections.filter(
                                     s => s?.formSectionId === form_section?.id
                                 )
-                                return (
+                                const include_add_section_button = form_section?.repeatableMax > filtered.length
+                                return (<div key={form_section?.id}>
                                     <UpdateSectionWrap
                                         key={form_section?.id}
                                         formSectionDef={form_section}
@@ -635,9 +694,9 @@ export const UpdateFormSection = ({
                                         mode={mode}
                                         digital_submission_sections={filtered}
                                         onSubmissionSectionChange={handleSubmissionSectionChange}
-
                                     />
-                                )
+                                    {include_add_section_button && <button className="form-control btn btn-outline-primary">+</button>}
+                                </div>)
                             }
                         )}
                     </div>
