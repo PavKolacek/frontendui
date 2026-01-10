@@ -1,4 +1,7 @@
+import { SelectInput } from "@hrbolek/uoisfrontend-shared"
 import { Input } from "../../../../_template/src/Base/FormControls/Input"
+import { Select } from "../../../../_template/src/Base/FormControls/Select"
+import { formFieldRegister } from "../../DigitalFormGQLModel/Components/FormFieldRenderer"
 
 /**
  * A component that displays medium-level content for an template entity.
@@ -24,17 +27,23 @@ import { Input } from "../../../../_template/src/Base/FormControls/Input"
  * </TemplateMediumContent>
  */
 export const MediumEditableContent = ({ item, onChange=(e)=>null, onBlur=(e)=>null, children}) => {
+    const opt = Object.values(formFieldRegister).map(v => [v?.label, v?.value])
     return (
         <>           
-        {/* defaultValue={item?.name|| "Název"}  */}
+            {/* defaultValue={item?.name|| "Název"}  */}
+            
             <Input id={"name"} label={"Jméno"} className="form-control" value={item?.name|| "name"} onChange={onChange} onBlur={onBlur} />
             <Input id={"label"} label={"Označení"} className="form-control" value={item?.label|| "Položka"} onChange={onChange} onBlur={onBlur} />
-            <Input id={"labelEn"} label={"Label"} className="form-control" value={item?.labelEn|| "Field"} onChange={onChange} onBlur={onBlur} />
-            <Input id={"description"} label={"Anglický název"} className="form-control" value={item?.description|| "Popisný text"} onChange={onChange} onBlur={onBlur} />
+            <Input id={"labelEn"} label={"Anglické označení / label"} className="form-control" value={item?.labelEn|| "Field"} onChange={onChange} onBlur={onBlur} />
+            <Input id={"description"} label={"Popis"} className="form-control" value={item?.description|| "Popisný text"} onChange={onChange} onBlur={onBlur} />
             {/* required */}
             <Input type="number" id={"order"} label={"Pořadí"} className="form-control" value={item?.order|| 1} onChange={onChange} onBlur={onBlur} />
             {/* formula */}
             {/* type_id */}
+            <Select id="typeId" label={"typ"} className="form-control" value={item?.typeId || ""} onChange={onChange} onBlur={onBlur} >  
+                {opt.map(o => <option value={o[1]}>{o[0]}</option>)}
+            </Select>
+            {JSON.stringify(item)}
             {/* backend_formula */}
             {/* flatten_formula */}
             {children}

@@ -31,6 +31,7 @@ import { UpdateButton as UpdateFormFieldButton } from "../../DigitalFormFieldGQL
 import { DeleteButton as DeleteFormFieldButton } from "../../DigitalFormFieldGQLModel/Mutations/Delete";
 import { CreateButton as CreateFormSectionButton } from "../../DigitalFormSectionGQLModel/Mutations/Create";
 import { CreateButton as CreateFormFieldButton } from "../../DigitalFormFieldGQLModel/Mutations/Create";
+import { FormFieldRenderer } from "../Components/FormFieldRenderer";
 
 
 // const index = {
@@ -342,7 +343,7 @@ const DefaultSubmissionFieldDefinitionPreview = ({ fieldDef, digital_submission_
     </div>
 );
 
-const DefaultSubmissionRead = ({ 
+const DefaultSubmissionRead = ({
     children,
     ...props
 }) => {
@@ -352,7 +353,7 @@ const DefaultSubmissionRead = ({
         onSubmissionFieldChange,
         mode,
     } = props
-    return (<>{(mode==="design") && <DefaultSubmissionFieldDefinitionPreview {...props} />}
+    return (<>{(mode === "design") && <DefaultSubmissionFieldDefinitionPreview {...props} />}
         <div className="py-2">
             {digital_submission_field?.value ?? <span className="text-muted">--</span>}
         </div>
@@ -368,9 +369,6 @@ const SubmissionFieldEdit = ({
         onSubmissionFieldChange,
         mode,
     } = props
-    
-    const resolvedValue = digital_submission_field?.value ?? "";
-    const resolvedPlaceholder = fieldDef?.description ?? "";
 
     const handleValueChange = (e) => {
         const newValue = e?.target?.value;
@@ -382,16 +380,24 @@ const SubmissionFieldEdit = ({
         });
     };
 
-    return (<>{(mode==="design") && <DefaultSubmissionFieldDefinitionPreview {...props} />}
-        <Input
+    return (<>{(mode === "design") && <DefaultSubmissionFieldDefinitionPreview {...props} />}
+        {/* <Input
             className="form-control"
             value={resolvedValue}
             onChange={handleValueChange}
             placeholder={resolvedPlaceholder}
-            disabled={mode==="design"}
+            disabled={mode === "design"}
+        /> */}
+        {/* {JSON.stringify(fieldDef)} */}
+        <FormFieldRenderer 
+            digital_submission_field={digital_submission_field} 
+            fieldDef={fieldDef}
+            mode={mode}
+            onChange={handleValueChange}
         />
     </>);
 };
+
 
 export const UpdateField = ({
     fieldDef,
@@ -403,7 +409,7 @@ export const UpdateField = ({
     children,
     SubmissionFieldComponent = SubmissionFieldEdit
 }) => {
-    
+
     // const handleFieldDefChange = useCallback(())
     const {
         run: deleteField, error: errorDeleteField, loading: deletingField,
@@ -418,29 +424,25 @@ export const UpdateField = ({
         reRead()
     }, [deleteField])
 
-    const normalizeSubmissionField = useCallback(
-        (partial) => ({
-            ...digital_submission_field,
-            fieldId: fieldDef?.id,
-            field: fieldDef,
-            ...partial,
-        }),
-        [digital_submission_field, fieldDef]
-    );
-
     const handleSubmissionChange = useCallback(
         (next) => {
             const partial =
                 next && typeof next === "object" && !Array.isArray(next)
                     ? next
                     : { value: next };
-            const result = normalizeSubmissionField(partial)
-            // console.log("UpdateField.handleSubmissionChange", next, "=>", result)
-            onSubmissionFieldChange(result);
-        },
-        [normalizeSubmissionField, onSubmissionFieldChange]
-    );
 
+            onSubmissionFieldChange({
+                ...digital_submission_field,
+                fieldId: fieldDef?.id,
+                field: fieldDef,
+                ...partial,
+            });
+        },
+        [digital_submission_field, fieldDef, onSubmissionFieldChange]
+    );
+    const handleOkFieldDialog = () => {
+
+    }
     return (
         <AsyncActionProvider item={fieldDef} queryAsyncAction={ReadFormFieldAsyncAction} options={{ deferred: true }}>
             <AsyncStateIndicator error={errorDeleteField} loading={deletingField} text="Odstraňuji položku" />
@@ -475,14 +477,14 @@ export const UpdateField = ({
                     onChange={handleChange}
                     placeholder="Enter value…"
                 /> */}
-                
+
                 <SubmissionFieldComponent
                     onSubmissionFieldChange={handleSubmissionChange}
                     fieldDef={fieldDef}
                     digital_submission_field={digital_submission_field}
                     mode={mode}
                 />
-                
+
             </SimpleCardCapsule>
         </AsyncActionProvider>
     );
@@ -605,9 +607,9 @@ const FormSectionSections = ({
                                         onClick={() =>
                                             handleRemoveSubmissionSection(form_section, sectionInstance, filtered.length)
                                         }
-                                        disabled={mode === "view"}
+                                        disabled={mode === "design"}
                                     >
-                                        - {form_section?.label ?? form_section?.name ?? "section"} [{index+1}]
+                                        - {form_section?.label ?? form_section?.name ?? "section"} [{index + 1}]
                                     </button>
                                 )}
                             </div>
@@ -617,7 +619,7 @@ const FormSectionSections = ({
                                 className="form-control btn btn-outline-primary"
                                 type="button"
                                 onClick={() => handleAddSubmissionSection(form_section)}
-                                disabled={mode === "view"}
+                                disabled={mode === "design"}
                             >
                                 + {form_section?.label ?? form_section?.name ?? "section"} [{filtered.length}/{form_section?.repeatableMax}]
                             </button>
@@ -636,7 +638,7 @@ export const ReadFormSection = ({
     mode = "design",
     digital_submission_section = empty,
     onSubmissionSectionChange = dummy,
-    SubmissionFieldComponent= SubmissionFieldEdit,
+    SubmissionFieldComponent = SubmissionFieldEdit,
     children
 }) => {
 
@@ -686,9 +688,9 @@ export const ReadFormSection = ({
     const repeatable = formSectionDef?.repeatable ?? (max > 1);
 
     const H = headingIndex[clamp(level, 1, 6)] ?? headingIndex[6];
-   
+
     const { reRead } = useGQLEntityContext()
-    
+
 
     useEffect(() => {
         // bezpečně: bez id nemá cenu normalizovat
@@ -769,7 +771,7 @@ export const ReadFormSection = ({
                 {formSectionDef?.description ?? "--NEPOPSÁN--"}
 
                 <div>
-                    <FormSectionBody 
+                    <FormSectionBody
                         formSectionDef={formSectionDef}
                         digital_submission_section={digital_submission_section}
                         level={level}
@@ -1015,6 +1017,14 @@ export const UpdateFormSection = ({
         [digital_submission_section, onSubmissionSectionChange]
     );
 
+    const { loading, error, reRead: reRead2, item } = useGQLEntityContext()
+    const handleReload = async () => {
+        if (item?.id) {
+            const response = await reRead2({ id:  item?.id })
+            console.log("UpdateForm.handleReload", response)
+        }
+    }
+
     return (
         <AsyncActionProvider item={formSectionDef} queryAsyncAction={ReadFormSectionAsyncAction} options={{ deferred: true }}>
             <AsyncStateIndicator error={errorUpdate} loading={updating} text="Ukládám" />
@@ -1035,9 +1045,38 @@ export const UpdateFormSection = ({
                             className="btn btn-sm btn-outline-primary border-0"
                         >🖍</DesignSectionButton>
 
-                        <ConfirmClickButton className="btn btn-sm border-0" onClick={onAddSubSection}>
+                        {/* <ConfirmClickButton className="btn btn-sm border-0" onClick={onAddSubSection}>
                             + Sekce
-                        </ConfirmClickButton>
+                        </ConfirmClickButton> */}
+                        <CreateFormSectionButton 
+                            className="btn btn-sm border-01" 
+                            onOk={handleReload}
+                            initialItem={{
+                                sectionId: formSectionDef?.id,
+                                // id: itemid,
+                                formId: formSectionDef?.formId,
+                                name: `sekce_${level}_${formSectionDef?.sections?.length + 1}`,
+                                label: `${level}.${formSectionDef?.sections?.length + 1}. Nová sekce`,
+                                labelEn: "New section",
+                                description: `Sekce ${level}.${formSectionDef?.sections?.length + 1}`,
+                                repeatableMin: 1,
+                                repeatableMax: 1,
+                                fields: [
+                                    {
+                                        id: crypto.randomUUID(),
+                                        // formSectionId: itemid,
+                                        formId: formSectionDef?.formId,
+                                        label: "Nová položka",
+                                        labelEn: "New field",
+                                        name: "field",
+                                        order: formSectionDef?.sections?.length + 1
+                                    }
+                                ]
+                            }}
+                        >
+                            + Sekce
+                        </CreateFormSectionButton>
+
                         <ConfirmClickButton className="btn btn-sm border-0" onClick={onAddField}>
                             + Položka
                         </ConfirmClickButton>
@@ -1075,19 +1114,19 @@ export const UpdateFormSection = ({
     );
 };
 
-const DummyFieldsAndSections = {fields: [], sections: []}
+const DummyFieldsAndSections = { fields: [], sections: [] }
 const FormSectionBody = ({
-    formSectionDef=DummyFieldsAndSections,
-    digital_submission_section=DummyFieldsAndSections,
-    level=2,
-    dummy=dummy,
-    mode="design",
-    reRead=dummyFunc,
-    onSubmissionSectionChange=dummyFunc,
-    onSubmissionFieldChange=dummyFunc,
+    formSectionDef = DummyFieldsAndSections,
+    digital_submission_section = DummyFieldsAndSections,
+    level = 2,
+    dummy = dummy,
+    mode = "design",
+    reRead = dummyFunc,
+    onSubmissionSectionChange = dummyFunc,
+    onSubmissionFieldChange = dummyFunc,
     // onAddSubmissionSection=dummyFunc,
-    onRemoveSubmissionSection=dummyFunc,
-    SubmissionFieldComponent=dummyFunc,
+    onRemoveSubmissionSection = dummyFunc,
+    SubmissionFieldComponent = dummyFunc,
     ...props
 }) => {
     // console.log("formSectionDef?.sections", formSectionDef?.sections)
@@ -1117,7 +1156,7 @@ const FormSectionBody = ({
 
 const UpdateSectionWrap = ({
     digital_submission_sections,
-    FormSectionComponent=UpdateFormSection,
+    FormSectionComponent = UpdateFormSection,
     ...props
 }) => {
     const { formSectionDef } = props
@@ -1229,6 +1268,16 @@ export const UpdateForm = ({
         return result
     }, [insertSection])
 
+
+    const sectionid = crypto.randomUUID()
+    const { loading, error, reRead, item } = useGQLEntityContext()
+    const handleReload = async () => {
+        if (item?.id) {
+            const response = await reRead({ id:  item?.id })
+            console.log("UpdateForm.handleReload", response)
+        }
+    }
+
     // const handleCreate = () => null
     /** ---------------------------
      *  Render
@@ -1236,14 +1285,36 @@ export const UpdateForm = ({
     return (
         <Row>
             <Col>
+                <AsyncStateIndicator error={error} loading={loading} />
                 <SimpleCardCapsule title={formDef?.name ?? "Form"}>
                     <SimpleCardCapsuleRightCorner>
+                        <button className="btn btn-sm border-0" onClick={handleReload}>Reload</button>
                         {mode === 'design' && (<ConfirmClickButton
                             onClick={handleCreate}
                             className="btn btn-sm border-0"
                         >
                             + Sekce
                         </ConfirmClickButton>)}
+                        <CreateFormSectionButton 
+                            className="btn btn-sm border-0" 
+                            onOk={handleReload}
+                            initialItem={{
+                                id: sectionid,
+                                formId: initialFormDef?.id,
+                                name: `sekce`,
+                                label: 'Sekce',
+                                repeatable: false,
+                                repeatableMin: 1,
+                                repeatableMax: 1,
+                                fields: [{
+                                    id: crypto.randomUUID(),
+                                    name: "field",
+                                    label: "Položka"
+                                }]
+                            }}
+                        >
+                            + Sekce
+                        </CreateFormSectionButton>
                         <button className="btn btn-success btn-sm border-0" onClick={() => setMode(prev => prev === 'design' ? 'view' : 'design')}>
                             {mode === 'design' ? 'design' : 'view'}
                         </button>

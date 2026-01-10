@@ -4,14 +4,14 @@ import { createAsyncGraphQLAction2 } from "../../../../dynamic/src/Core/createAs
 import { reduceToFirstEntity, updateItemsFromGraphQLResult } from "../../../../dynamic/src/Store";
 
 const UpdateMutationStr = `
-mutation digitalFormFieldUpdate($id: UUID!, $lastchange: DateTime!, $name: String, $label: String, $labelEn: String, $description: String, $required: Boolean, $order: Int, $computed: Int, $typeId: UUID!) {
-  digitalFormFieldUpdate(formField: {id: $id, lastchange: $lastchange, name: $name, label: $label, labelEn: $labelEn, description: $description, required: $required, order: $order, typeId: $typeId , computed: $computed}) {
-    ... on DigitalFormFieldGQLModel { ...Large }
-    ... on DigitalFormFieldGQLModelUpdateError { ...Error }
+mutation requestUpdate($id: UUID!, $lastchange: DateTime!) {
+  requestUpdate(request: {id: $id, lastchange: $lastchange}) {
+    ... on RequestGQLModelUpdateError { ...Error }
+    ... on RequestGQLModel { ...Large }
   }
 }
 
-fragment Error on DigitalFormFieldGQLModelUpdateError {
+fragment Error on RequestGQLModelUpdateError {
   __typename
   Entity {
     ...Large

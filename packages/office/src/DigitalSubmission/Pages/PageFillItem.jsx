@@ -7,7 +7,7 @@ import { PageItemBase } from "./PageBase"
 
 import React, { useMemo, useRef, useState, useCallback } from "react";
 
-import { SimpleCardCapsule, SimpleCardCapsuleRightCorner } from "../../../../_template/src/Base/Components";
+import { SimpleCardCapsule, SimpleCardCapsuleFooterCorner, SimpleCardCapsuleRightCorner } from "../../../../_template/src/Base/Components";
 import { Input } from "../../../../_template/src/Base/FormControls/Input";
 import { Row } from "../../../../_template/src/Base/Components/Row";
 import { Col } from "../../../../_template/src/Base/Components/Col";
@@ -19,7 +19,7 @@ import {
     DeleteAsyncAction as DeleteSectionAsyncAction,
     InsertAsyncAction as InsertSectionAsyncAction,
     ReadAsyncAction as ReadFormSectionAsyncAction,
-    
+
     UpdateAsyncAction as UpdateFormAsyncAction
 } from "../../DigitalFormSectionGQLModel/Queries";
 import { useEffect } from "react";
@@ -43,6 +43,7 @@ import { Link } from "../../../../_template/src/UserGQLModel/Components";
 import { Attribute, formatDateTime } from "../../../../_template/src/Base/Components/Attribute";
 import { InsertAsyncAction as InsertSubmissionSectionAsyncAction } from "../../DigitalSubmissionSectionGQLModel/Queries/InsertAsyncAction";
 import { DeleteAsyncAction as DeleteSubmissionSectionAsyncAction } from "../../DigitalSubmissionSectionGQLModel/Queries/DeleteAsyncAction";
+import { FormFieldRenderer } from "../../DigitalFormGQLModel/Components/FormFieldRenderer";
 
 
 // const index = {
@@ -354,7 +355,7 @@ const DefaultSubmissionFieldDefinitionPreview = ({ fieldDef, digital_submission_
     </div>
 );
 
-const DefaultSubmissionRead = ({ 
+const DefaultSubmissionRead = ({
     children,
     ...props
 }) => {
@@ -364,7 +365,7 @@ const DefaultSubmissionRead = ({
         onSubmissionFieldChange,
         mode,
     } = props
-    return (<>{(mode==="design") && <DefaultSubmissionFieldDefinitionPreview {...props} />}
+    return (<>{(mode === "design") && <DefaultSubmissionFieldDefinitionPreview {...props} />}
         <div className="py-2">
             {digital_submission_field?.value ?? <span className="text-muted">--</span>}
         </div>
@@ -372,65 +373,81 @@ const DefaultSubmissionRead = ({
 }
 
 const SubmissionFieldEdit = ({
-    children, ...props
+    children,
+    fieldDef,
+    digital_submission_field,
+    onSubmissionFieldChange,
+    mode,
+    ...props
 }) => {
-    const {
-        fieldDef,
-        digital_submission_field,
-        onSubmissionFieldChange,
-        mode,
-    } = props
-    const [delayer] = useState(() => CreateDelayer())
+
+    const [delayer] = useState(() => CreateDelayer());
     const resolvedValue = digital_submission_field?.value ?? "";
-    const resolvedPlaceholder = fieldDef?.description ?? "";
-    
-    const { 
-        entity, loading: saving, error, run
-    } = useAsyncThunkAction(UpdateSubmissionFieldAsyncAction, {id: digital_submission_field?.id}, {deferred: true})
-    const { run: reReadSubmission } = useAsyncThunkAction(ReadSubmissionAsyncAction, {}, {deferred: true})
 
-    const handleValueChange = async(e) => {
-        const newValue = e?.target?.value;
-        const newField = {
-            id: digital_submission_field.id, 
-            lastchange: digital_submission_field.lastchange, 
-            value: newValue,
-        }
-        console.log("SubmissionFieldEdit.handleValueChange", newField)
-        const result = await delayer(async () =>{
-            await run(newField)
-            const id = digital_submission_field?.submissionId
-            if (id)
-                await reReadSubmission({id})    
+    const { run, loading: saving, error } =
+        useAsyncThunkAction(UpdateSubmissionFieldAsyncAction, { id: digital_submission_field?.id }, { deferred: true });
 
-        })
-        console.log("SubmissionFieldEdit.handleValueChange.result", result)
+    const { run: reReadSubmission } =
+        useAsyncThunkAction(ReadSubmissionAsyncAction, {}, { deferred: true });
+
+    const fieldRef = useRef(digital_submission_field);
+    useEffect(() => {
+        fieldRef.current = digital_submission_field;
+    }, [digital_submission_field]);
+
+    const pendingValueRef = useRef(resolvedValue);
+    useEffect(() => {
+        // když přijde value z backendu a uživatel zrovna nepíše,
+        // klidně to můžeš synchronizovat; pokud řešíš "dirty", tak tady nedělej nic.
+        pendingValueRef.current = resolvedValue;
+    }, [resolvedValue]);
+
+    const flush = useCallback(async () => {
+        const f = fieldRef.current;
+        const value = pendingValueRef.current;
+
+        if (!f?.id) return;
+
+        const payload = { id: f.id, lastchange: f.lastchange, value };
+
+        await run(payload);
+
+        const submissionId = f?.submissionId;
+        if (submissionId) await reReadSubmission({ id: submissionId });
+
         onSubmissionFieldChange?.({
-            ...digital_submission_field,
+            ...f,
             field: fieldDef,
             fieldId: fieldDef?.id,
-            value: newValue,
+            value,
         });
+    }, [run, reReadSubmission, onSubmissionFieldChange, fieldDef]);
+
+    const handleValueChange = (e) => {
+        pendingValueRef.current = e?.target?.value ?? "";
+        delayer(flush);
     };
 
     return (<>
-        {(mode==="view") && (
-            <DefaultSubmissionFieldDefinitionPreview 
-                fieldDef={fieldDef} 
-                digital_submission_field={digital_submission_field} 
+        {(mode === "view") && (
+            <DefaultSubmissionFieldDefinitionPreview
+                fieldDef={fieldDef}
+                digital_submission_field={digital_submission_field}
             />
         )}
         {/* {mode} */}
         {/* {JSON.stringify(digital_submission_field)} */}
         <AsyncStateIndicator error={error} loading={saving} text="Ukládám" />
-        <Input
-            className="form-control"
-            value={resolvedValue}
+        <FormFieldRenderer
+            digital_submission_field={digital_submission_field}
+            fieldDef={fieldDef}
+            mode={mode}
             onChange={handleValueChange}
-            placeholder={resolvedPlaceholder}
         />
+
     </>);
 };
+
 
 export const UpdateField = ({
     fieldDef,
@@ -442,16 +459,6 @@ export const UpdateField = ({
     children,
     SubmissionFieldComponent = SubmissionFieldEdit
 }) => {
-    
-    const normalizeSubmissionField = useCallback(
-        (partial) => ({
-            ...digital_submission_field,
-            fieldId: fieldDef?.id,
-            field: fieldDef,
-            ...partial,
-        }),
-        [digital_submission_field, fieldDef]
-    );
 
     const handleSubmissionChange = useCallback(
         (next) => {
@@ -459,11 +466,15 @@ export const UpdateField = ({
                 next && typeof next === "object" && !Array.isArray(next)
                     ? next
                     : { value: next };
-            const result = normalizeSubmissionField(partial)
-            // console.log("UpdateField.handleSubmissionChange", next, "=>", result)
-            onSubmissionFieldChange(result);
+
+            onSubmissionFieldChange({
+                ...digital_submission_field,
+                fieldId: fieldDef?.id,
+                field: fieldDef,
+                ...partial,
+            });
         },
-        [normalizeSubmissionField, onSubmissionFieldChange]
+        [digital_submission_field, fieldDef, onSubmissionFieldChange]
     );
 
     return (
@@ -476,9 +487,9 @@ export const UpdateField = ({
                 </>}
                 style={{ paddingLeft: 12, border: "none", borderLeftx: "2px solid #3a7900ff", }}
             >
-                <SimpleCardCapsuleRightCorner>
-                    <Link item={digital_submission_field?.changedby}>{digital_submission_field?.changedby?.fullname}@{formatDateTime(digital_submission_field?.lastchange)}</Link> 
-                </SimpleCardCapsuleRightCorner>
+                <SimpleCardCapsuleFooterCorner>
+                    <Link item={digital_submission_field?.changedby}>{digital_submission_field?.changedby?.fullname}@{formatDateTime(digital_submission_field?.lastchange)}</Link>
+                </SimpleCardCapsuleFooterCorner>
                 {/* {JSON.stringify(fieldDef)}
                 <hr/>
                 {JSON.stringify(sectionInstance)} */}
@@ -488,14 +499,14 @@ export const UpdateField = ({
                     onChange={handleChange}
                     placeholder="Enter value…"
                 /> */}
-                
+
                 <SubmissionFieldComponent
                     onSubmissionFieldChange={handleSubmissionChange}
                     fieldDef={fieldDef}
                     digital_submission_field={digital_submission_field}
                     mode={mode}
                 />
-                
+
             </SimpleCardCapsule>
         </AsyncActionProvider>
     );
@@ -560,8 +571,8 @@ const FormSectionSections = ({
     SubmissionFieldComponent = SubmissionFieldEdit,
     FormSectionComponent = UpdateFormSection
 }) => {
-    const ctxInsert = useAsyncThunkAction(InsertSubmissionSectionAsyncAction, {}, {deferred: true})
-    const ctxDelete = useAsyncThunkAction(DeleteSubmissionSectionAsyncAction, {}, {deferred: true})
+    const ctxInsert = useAsyncThunkAction(InsertSubmissionSectionAsyncAction, {}, { deferred: true })
+    const ctxDelete = useAsyncThunkAction(DeleteSubmissionSectionAsyncAction, {}, { deferred: true })
     const handleAddSubmissionSection = useCallback(
         async (formSectionDef) => {
             const payload = {
@@ -579,7 +590,7 @@ const FormSectionSections = ({
         [onSubmissionSectionChange]
     )
 
-    const { run: reReadDelete } = useAsyncThunkAction(ReadSubmissionAsyncAction, {id: digital_submission_section?.id}, {deferred: true})
+    const { run: reReadDelete } = useAsyncThunkAction(ReadSubmissionAsyncAction, { id: digital_submission_section?.id }, { deferred: true })
 
     const handleRemoveSubmissionSection = useCallback(
         async (formSectionDef, targetSection, count) => {
@@ -587,7 +598,7 @@ const FormSectionSections = ({
             if (count <= min) return;
 
             const result = await ctxDelete.run(targetSection)
-            
+
             console.log("FormSectionSections.handleRemoveSubmissionSection", result)
             const r = await reReadDelete({ id: digital_submission_section.submission.id })
             console.log("FormSectionSections.handleRemoveSubmissionSection", r)
@@ -636,9 +647,9 @@ const FormSectionSections = ({
                                         onClick={() =>
                                             handleRemoveSubmissionSection(form_section, sectionInstance, filtered.length)
                                         }
-                                        // disabled={mode === "design"}
+                                    // disabled={mode === "design"}
                                     >
-                                        - {form_section?.label ?? form_section?.name ?? "section"} [{index+1}]
+                                        - {form_section?.label ?? form_section?.name ?? "section"} [{index + 1}]
                                     </button>
                                 )}
                             </div>
@@ -648,7 +659,7 @@ const FormSectionSections = ({
                                 className="form-control btn btn-outline-primary"
                                 type="button"
                                 onClick={() => handleAddSubmissionSection(form_section)}
-                                // disabled={mode === "design"}
+                            // disabled={mode === "design"}
                             >
                                 + {form_section?.label ?? form_section?.name ?? "section"} [{filtered.length}/{form_section?.repeatableMax}]
                             </button>
@@ -668,7 +679,7 @@ export const ReadFormSection = ({
     mode = "design",
     digital_submission_section = empty,
     onSubmissionSectionChange = dummyFunc,
-    SubmissionFieldComponent= SubmissionFieldEdit,
+    SubmissionFieldComponent = SubmissionFieldEdit,
     children
 }) => {
 
@@ -718,9 +729,9 @@ export const ReadFormSection = ({
     const repeatable = formSectionDef?.repeatable ?? (max > 1);
 
     const H = headingIndex[clamp(level, 1, 6)] ?? headingIndex[6];
-   
+
     // const { reRead } = useGQLEntityContext()
-    const { run: reRead } = useAsyncThunkAction(ReadSubmissionAsyncAction, {id: digital_submission_section?.id}, {deferred: true})
+    const { run: reRead } = useAsyncThunkAction(ReadSubmissionAsyncAction, { id: digital_submission_section?.id }, { deferred: true })
 
     useEffect(() => {
         // bezpečně: bez id nemá cenu normalizovat
@@ -801,7 +812,7 @@ export const ReadFormSection = ({
                 {formSectionDef?.description ?? "--NEPOPSÁN--"}
 
                 <div>
-                    <FormSectionBody 
+                    <FormSectionBody
                         formSectionDef={formSectionDef}
                         digital_submission_section={digital_submission_section}
                         level={level}
@@ -899,7 +910,7 @@ export const UpdateFormSection = ({
 
     const H = headingIndex[clamp(level, 1, 6)] ?? headingIndex[6];
     const { reRead } = useGQLEntityContext()
-    
+
     useEffect(() => {
         // bezpečně: bez id nemá cenu normalizovat
         if (!digital_submission_section?.id || !formSectionDef?.id) return;
@@ -1017,19 +1028,19 @@ export const UpdateFormSection = ({
     );
 };
 
-const DummyFieldsAndSections = {fields: [], sections: []}
+const DummyFieldsAndSections = { fields: [], sections: [] }
 const FormSectionBody = ({
-    formSectionDef=DummyFieldsAndSections,
-    digital_submission_section=DummyFieldsAndSections,
-    level=2,
-    dummy=dummy,
-    mode="design",
-    reRead=dummyFunc,
-    onSubmissionSectionChange=dummyFunc,
-    onSubmissionFieldChange=dummyFunc,
+    formSectionDef = DummyFieldsAndSections,
+    digital_submission_section = DummyFieldsAndSections,
+    level = 2,
+    dummy = dummy,
+    mode = "design",
+    reRead = dummyFunc,
+    onSubmissionSectionChange = dummyFunc,
+    onSubmissionFieldChange = dummyFunc,
     // onAddSubmissionSection=dummyFunc,
-    onRemoveSubmissionSection=dummyFunc,
-    SubmissionFieldComponent=dummyFunc,
+    onRemoveSubmissionSection = dummyFunc,
+    SubmissionFieldComponent = dummyFunc,
     ...props
 }) => {
     // console.log("formSectionDef?.sections", formSectionDef?.sections)
@@ -1062,7 +1073,7 @@ const FormSectionBody = ({
 
 const UpdateSectionWrap = ({
     digital_submission_sections,
-    FormSectionComponent=UpdateFormSection,
+    FormSectionComponent = UpdateFormSection,
     ...props
 }) => {
     const { formSectionDef } = props
@@ -1152,6 +1163,12 @@ export const UpdateForm = ({
      *  Designer changes (structure)
      * --------------------------- */
 
+    const { reRead } = useGQLEntityContext()
+    useEffect(()=> {
+        console.log("UpdateForm.useEffect.reRead", typeof reRead)
+        if (formDef?.id)
+            reRead({ id: formDef?.id })
+    }, [formDef?.id])
 
     const {
         run: insertSection, error: errorInsertSection, loading: creatingSection,
@@ -1167,28 +1184,28 @@ export const UpdateForm = ({
         <Row>
             <Col>
                 {/* <SimpleCardCapsule title={""}> */}
-                    <h1>{formDef?.name ?? "Form"}</h1>
-                    {formDef?.description && "--NEVYPLNĚNO--"}
-                    <div>
-                        {(formDef?.sections ?? []).map((secDef) => {
-                            const digital_submission_sections =
-                                initialSubmission?.sections?.filter(s => s?.formSectionId === secDef?.id) || []
-                            return (
-                                <UpdateSectionWrap
-                                    digital_submission_sections={digital_submission_sections}
-                                    // onSubmissionSectionChange={handleSubmissionSectionChange}
-                                    key={secDef?.id}
-                                    formSectionDef={secDef}
-                                    // submission={submission}
-                                    level={2}
-                                    dummy={dummy}
-                                    mode={mode}
-                                    FormSectionComponent={FormSectionComponent}
-                                // onFieldValueChange={handleFieldValueChange}
-                                />
-                            )
-                        })}
-                    </div>
+                <h1>{formDef?.name ?? "Form"}</h1>
+                {formDef?.description && "--NEVYPLNĚNO--"}
+                <div>
+                    {(formDef?.sections ?? []).map((secDef) => {
+                        const digital_submission_sections =
+                            initialSubmission?.sections?.filter(s => s?.formSectionId === secDef?.id) || []
+                        return (
+                            <UpdateSectionWrap
+                                digital_submission_sections={digital_submission_sections}
+                                // onSubmissionSectionChange={handleSubmissionSectionChange}
+                                key={secDef?.id}
+                                formSectionDef={secDef}
+                                // submission={submission}
+                                level={2}
+                                dummy={dummy}
+                                mode={mode}
+                                FormSectionComponent={FormSectionComponent}
+                            // onFieldValueChange={handleFieldValueChange}
+                            />
+                        )
+                    })}
+                </div>
                 {/* </SimpleCardCapsule> */}
             </Col>
             {debug && (
@@ -1220,13 +1237,13 @@ export const UpdateForm = ({
 
 
 export const FillItem = ({ item }) => {
-    console.log(item)
+    // console.log(item)
     return (<>
-        
-        <AsyncActionProvider 
-            item={{id: item?.formId}}
-            queryAsyncAction={ReadFormAsyncAction} 
-            options={{ deferred: false, network: true }}
+
+        <AsyncActionProvider
+            item={{ id: item?.formId }}
+            queryAsyncAction={ReadFormAsyncAction}
+            options={{ deferred: true, network: true }}
         >
             <FillItemBody submission={item} />
         </AsyncActionProvider>
@@ -1236,24 +1253,24 @@ export const FillItem = ({ item }) => {
 const FillItemBody = ({ submission }) => {
     const ctx = useGQLEntityContext()
     const { id } = submission
-    const { entity, run } = useAsyncThunkAction(ReadSubmissionAsyncAction, {id}, {deferred: true})
+    const { entity, run } = useAsyncThunkAction(ReadSubmissionAsyncAction, { id }, { deferred: true })
     // useEffect(()=>{
     //     if (id)
     //         run({id})
     // }, [run, id])
     return (<>
-    
-        
+
+
         {/* <GeneratedContentBase item={item} /> */}
         <UpdateForm submission={entity ?? submission} item={ctx.item} />
     </>)
 }
 
-export const PageFillItem = ({ 
-    SubPage=FillItem,
+export const PageFillItem = ({
+    SubPage = FillItem,
     ...props
 }) => {
     return (
-        <PageItemBase SubPage={SubPage} {...props}/>
+        <PageItemBase SubPage={SubPage} {...props} />
     )
 }

@@ -7,7 +7,7 @@ import {
     CreateLink  as BaseCreateLink
 } from "../../../../_template/src/Base/Mutations/Create"
 
-const DefaultContent = (props) => <MediumEditableContent {...props}/>
+const DefaultContent = (props) => <MediumEditableContent {...props} />
 const MutationAsyncAction = InsertAsyncAction
 
 const permissions = {
@@ -28,15 +28,9 @@ export const CreateButton = ({
     DefaultContent:defaultContent=DefaultContent,
     readItemURI=ReadItemURI, 
     rbacitem,
-    initialitem={
-        name: "Nový formulář",
-        sections:[{
-            name: "sekce_1",
-            label: "1. Sekce",
-            description: "Hlavní sekce",
-            repeatableMin: 0,
-            repeatableMax: 1,
-        }]
+    initialItem={
+        name: "Nový typ žádostí",
+        mastergroupId: "d75d64a4-bf5f-43c5-9c14-8fda7aff6c09"
     },
     ...props
 }) => {
@@ -46,35 +40,26 @@ export const CreateButton = ({
         CreateDialog={CreateDialog_}
         readItemURI={readItemURI}
         rbacitem={rbacitem}
-        initialitem={initialitem}
+        initialItem={initialItem}
         mutationAsyncAction={mutationAsyncAction}
         {...permissions}
     />
 }
 
 export const CreateDialog = ({
-    title = "Nový formulář",
+    title = "Nov(ý/é)",
     mutationAsyncAction=MutationAsyncAction,
     DefaultContent:defaultContent=DefaultContent,
     readItemURI=ReadItemURI, 
-    initialItem={
-        name: "Nový formulář",
-        sections:[{
-            name: "sekce_1",
-            label: "1. Sekce",
-            description: "Hlavní sekce",
-            repeatableMin: 0,
-            repeatableMax: 1,
-        }]
-    },
+    initialItem,
     ...props
 }) => {
     return <BaseCreateDialog 
         {...props} 
         title={title}
         DefaultContent={defaultContent} 
-        initialItem={initialItem}
         readItemURI={readItemURI}
+        initialItem={initialItem}
         mutationAsyncAction={mutationAsyncAction}
     />
 };
